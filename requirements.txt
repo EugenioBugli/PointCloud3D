@@ -1,0 +1,7 @@
+torch
+torchvision
+tqdm
+numpy
+matplotlib.pyplot
+open3d
+plotly.graph_objects
