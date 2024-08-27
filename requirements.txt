@@ -5,3 +5,4 @@ numpy
 matplotlib.pyplot
 open3d
 plotly.graph_objects
+torch_scatter
