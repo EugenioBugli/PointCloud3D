@@ -1,20 +1,24 @@
 FROM pytorch/pytorch
 
-# Install system dependencies and upgrade pip
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpython3-dev \
     python3-setuptools \
-    && rm -rf /var/lib/apt/lists/* \
-    && python3 -m pip install --upgrade pip
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /working_dir
+# Upgrade pip
+RUN python3 -m pip install --upgrade pip
 
 # Copy requirements.txt and install Python dependencies
-COPY requirements.txt .
-RUN python3 -m pip install -r requirements.txt
+COPY requirements.txt /working_dir/requirements.txt
+RUN python3 -m pip install -r /working_dir/requirements.txt
+
+# Create and set the working directory
+RUN mkdir -p /working_dir
+WORKDIR /working_dir
 
 # Copy project files into the container
-COPY . .
+COPY . /working_dir
 
 # Default command to keep the container running
 CMD ["bash"]

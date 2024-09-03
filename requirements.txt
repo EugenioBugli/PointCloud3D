@@ -2,7 +2,7 @@ torch
 torchvision
 tqdm
 numpy
-matplotlib.pyplot
+matplotlib
 open3d
-plotly.graph_objects
-torch_scatter
+plotly
+jupyter
