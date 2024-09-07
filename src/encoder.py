@@ -1,9 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import tqdm
-
-import os
 import numpy as np
 
 
@@ -61,3 +58,57 @@ class ResBlock(nn.Module):
         third_part = second_part + res # (b,p,64) -> (b,p,64)
 
         return F.relu(third_part)
+
+
+class ResNetPointNet(nn.Module):
+    """
+        This class is used to define the PointNet model used to form a feature embedding for each point in the Point Cloud given in input.
+        Architecture design:
+
+            @ INPUT: Tensor of shape (batch_size, num_points, 3)
+
+            > Fully Connected Layer (3, in_dim=64)
+            > 5 Residual Blocks with Local Pooling and Concatenation
+            > Fully Connected Layer (out_dim=32, out_dim=32)
+
+            @ OUTPUT: Tensor of shape (batch_size, num_points, 32)
+    """
+
+    def __init__(self, in_dim=64, n_points=1024, res_dim=32, out_dim=32, n_blocks=5):
+        super(ResNetPointNet, self).__init__()
+
+        self.fc1 = nn.Linear(3, in_dim)
+
+        self.res = nn.ModuleList([
+            ResBlock(in_dim, n_points, res_dim, out_dim) for n_res in range(n_blocks)
+        ])
+
+        self.fc2 = nn.Linear(out_dim, out_dim)
+
+    def forward(self, x):
+        # Input: (b,p,3)
+
+        # Extract Normalized coordinates and indices to perform local pooling
+
+        norm_coord = CoordinateNormalization(x) # (b,p,2)
+        coord_indices = PlaneCoordinate2Index(norm_coord) # (b,p,2)
+
+        # First FC Layer
+        fc1 = F.relu(self.fc1(x)) # (b,p,3) -> (b,p,64)
+
+        # First ResBlock
+        res = self.res[0](fc1) # (b,p,64) -> (b,p,32)
+
+        # 2-5 ResBlock
+        for res_block in self.res[1:]:
+            # Local Pooling
+            pool = LocalPooling(norm_coord, coord_indices, res) # (b,p,32)
+            # Concatenation
+            concat = torch.cat([res, pool], dim=2) # (b,p,32) | (b,p,32) -> (b,p,64)
+            # following residual block
+            res = res_block(concat) # (b,p,64) -> (b,p,32)
+
+        # Last FC Layer
+        final = F.relu(self.fc2(res)) # (b,p,32) -> (b,p,32)
+
+        return final

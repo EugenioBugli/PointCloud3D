@@ -128,6 +128,8 @@ def PlaneCoordinate2Index(input_cloud, voxel_size=0.2):
             index : (batch_size, n_points, 2) tensor
     """
     return torch.floor(input_cloud/voxel_size).long()
+
+    
 def LocalPooling(norm_cloud, indices, input_cloud):
     """
         Unlike the Vanilla PointNet, we perform Local Max Pooling on the output of each ResBlock and then we concatenate the result
