@@ -19,3 +19,14 @@ This work is based on Lionar, Stefan, et al. "Dynamic Plane Convolutional Occupa
 
 ## Architecture
 ![Alt Text](./media/architecture.png)
+The Architecture used has an Encoder-Decoder structure :
+
+### Encoder
+   1. ResNetPointNet
+   2. Plane Predictor
+   3. UNet
+### Decoder
+  1. ResNet
+  2. Occupancy Predictor
+
+The obtained occupancy predictions are then used to reconstruct the mesh by using the Multiresolution IsoSurface Extraction (MISE) and the Marching Cubes algorithm
