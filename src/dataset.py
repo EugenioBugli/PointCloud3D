@@ -3,6 +3,8 @@ import numpy as np
 import open3d as o3d
 import plotly.graph_objects as go
 from torch.utils.data import DataLoader, Dataset
+from torchvision.datasets import DatasetFolder
+from sklearn.model_selection import train_test_split
 
 class FAUST_Dataset(Dataset):
     """
@@ -126,3 +128,41 @@ def SaveDataset(dataset, path):
 # Load your preprocessed Dataset:
 def LoadDataset(path):
     return torch.load("/content/drive/MyDrive/CV/PreProcessed/"+path, weights_only=False)
+
+def openDataFiles(training_path, test_path, val_size):
+    """
+        This function is used to import all the .ply files from the folders. Training is partitioned into train and validation set directly here.
+    """
+
+    training_dataset = DatasetFolder(
+        root = training_path,
+        loader = o3d.io.read_point_cloud,
+        extensions = ('ply',),
+        allow_empty = True,
+        )
+
+    test_dataset = DatasetFolder(
+        root = test_path,
+        loader = o3d.io.read_point_cloud,
+        extensions = ('ply',),
+        allow_empty = True,
+    )
+
+    unsorted_training_scan_files = [sample for sample, t in training_dataset.samples if t == 2]
+    training_scan_files = sorted(unsorted_training_scan_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+
+    unsorted_training_reg_files = [sample for sample, t in training_dataset.samples if t == 1]
+    training_reg_files = sorted(unsorted_training_reg_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+
+    # perform train-validation split :
+
+    train_scan_files, val_scan_files, train_reg_files, val_reg_files = train_test_split(training_scan_files, training_reg_files, test_size=val_size, random_state=15)
+
+
+    unsorted_test_scan_files = [sample for sample, t in test_dataset.samples if t == 1]
+    test_scan_files = sorted(unsorted_test_scan_files, key=lambda x: int(x.split('_')[-1].split('.')[0]))
+    test_reg_files = test_scan_files # check here
+    # we don't have any registration for the test set --> use instead the complete point cloud
+
+
+    return train_scan_files, train_reg_files, val_scan_files, val_reg_files, test_scan_files, test_reg_files
