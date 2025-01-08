@@ -1,173 +1,304 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
 
 class UNet(nn.Module):
     """
         This class is used to define the UNet of our Architecture, which is the final part of our Encoder.
         Architecture design:
 
-        We use a U-Net to process the plane features and adapt a modified implementation from[5].
-        We set the input and output feature dimensions to 32 and choose the depth of the U-Net such that the receptive field is equal to the size of the feature plane.
-        In doing so, we set a depth of 4 for our experiments with ShapeNet dataset (64^2 grids) and a depth of 5 for our scene experiments (128^2 grids).
+        @ INPUT: Tensor of shape (batch_size*L, 32, H, W)
+            # Encoder
+            # BottleNeck
+            # Decoder
 
-        @ INPUT: Tensor of shape (batch_size, num_points, 32)
-            # Encoder:
-                > Conv2D
-                > MaxPool2D
-
-                > Conv1D
-                > MaxPool1D
-
-                > Conv1D
-                > MaxPool1D
-
-            # BottleNeck:
-                >
-                >
-                >
-                >
-                >
-            # Decoder:
-                > UpConv2D
-                > MaxPool2D
-
-                > UpConv2D
-                > MaxPool2D
-
-                > UpConv2D
-                > MaxPool2D
-
-        @ OUTPUT: Tensor of shape (batch_size, num_points, 32)
+        @ OUTPUT: Tensor of shape (batch_size*L, 32, H, W)
     """
-    def __init__(self, in_dim=32, out_dim=32, n_points=1024):
+    def __init__(self, in_dim=32, out_dim=32, features_dim=64, n_points=1024):
         super(UNet, self).__init__()
 
-        self.pool = nn.MaxPool1d(
+        self.pool1 = nn.MaxPool2d(
             kernel_size=2,
             stride=2
         )
 
         # Encoder
 
-        self.e_conv1 = nn.Conv1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        ## Block 1
 
-        self.e_conv2 = nn.Conv1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        self.e_1 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=in_dim,
+                out_channels=features_dim,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim,
+                out_channels=features_dim,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim),
+            nn.ReLU(),
+        )
 
-        self.e_conv3 = nn.Conv1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        self.p_1 = nn.MaxPool2d(
+            kernel_size=2,
+            stride=2
+        )
+
+        ## Block 2
+
+        self.e_2 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim,
+                out_channels=features_dim*2,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*2),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*2,
+                out_channels=features_dim*2,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*2),
+            nn.ReLU(),
+        )
+
+        self.p_2 = nn.MaxPool2d(
+            kernel_size=2,
+            stride=2
+        )
+
+        ## Block 3
+
+        self.e_3 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*2,
+                out_channels=features_dim*4,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*4),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*4,
+                out_channels=features_dim*4,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*4),
+            nn.ReLU(),
+        )
+
+        self.p_3 = nn.MaxPool2d(
+            kernel_size=2,
+            stride=2
+        )
+
+        ## Block 4
+
+        self.e_4 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*4,
+                out_channels=features_dim*8,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*8),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*8,
+                out_channels=features_dim*8,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*8),
+            nn.ReLU(),
+        )
+
+        self.p_4 = nn.MaxPool2d(
+            kernel_size=2,
+            stride=2
+        )
 
         # Bottleneck
 
-        self.b_conv = nn.Conv1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        self.b = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*8,
+                out_channels=features_dim*16,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*16),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*16,
+                out_channels=features_dim*16,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*16),
+            nn.ReLU(),
+        )
 
         # Decoder
 
-        self.d_upconv1 = nn.ConvTranspose1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
+        ## Block 1
+
+        self.d_upconv1 = nn.ConvTranspose2d(
+            in_channels=features_dim*16,
+            out_channels=features_dim*8,
             kernel_size=2,
             stride=2)
 
-        self.d_conv1 = nn.Conv1d(
-            in_channels=in_dim*2,
-            out_channels=in_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        self.d_1 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*16,
+                out_channels=features_dim*8,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*8),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*8,
+                out_channels=features_dim*8,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*8),
+            nn.ReLU(),
+        )
 
-        self.d_upconv2 = nn.ConvTranspose1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
+        ## Block 2
+
+        self.d_upconv2 = nn.ConvTranspose2d(
+            in_channels=features_dim*8,
+            out_channels=features_dim*4,
             kernel_size=2,
             stride=2)
 
-        self.d_conv2 = nn.Conv1d(
-            in_channels=in_dim*2,
-            out_channels=in_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        self.d_2 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*8,
+                out_channels=features_dim*4,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*4),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*4,
+                out_channels=features_dim*4,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*4),
+            nn.ReLU(),
+        )
 
-        self.d_upconv3 = nn.ConvTranspose1d(
-            in_channels=in_dim,
-            out_channels=in_dim,
+        ## Block 3
+
+        self.d_upconv3 = nn.ConvTranspose2d(
+            in_channels=features_dim*4,
+            out_channels=features_dim*2,
             kernel_size=2,
             stride=2)
 
-        self.d_conv3 = nn.Conv1d(
-            in_channels=in_dim*2,
-            out_channels=out_dim,
-            kernel_size=3,
-            stride=1,
-            padding=1)
+        self.d_3 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*4,
+                out_channels=features_dim*2,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*2),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim*2,
+                out_channels=features_dim*2,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim*2),
+            nn.ReLU(),
+        )
+
+        ## Block 4
+
+        self.d_upconv4 = nn.ConvTranspose2d(
+            in_channels=features_dim*2,
+            out_channels=features_dim,
+            kernel_size=2,
+            stride=2)
+
+        self.d_4 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=features_dim*2,
+                out_channels=features_dim,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=features_dim,
+                out_channels=features_dim,
+                kernel_size=3,
+                padding=1
+            ),
+            nn.BatchNorm2d(num_features=features_dim),
+            nn.ReLU(),
+        )
+
+        self.final = nn.Conv2d(
+                in_channels=features_dim,
+                out_channels=out_dim,
+                kernel_size=1
+            )
+
 
 
     def forward(self, x):
 
-        x = x.transpose(1,2) # (b,p,32) -> (b,32,p)
+        enc1 = self.e_1(x)
+        #print(f"Encoder block 1 : input ({x.shape}) ---> output ({enc1.shape})")
+        enc2 = self.e_2(self.p_1(enc1))
+        #print(f"Encoder block 2 : input ({self.p_1(enc1).shape}) ---> output ({enc2.shape})")
+        enc3 = self.e_3(self.p_2(enc2))
+        #print(f"Encoder block 3 : input ({self.p_2(enc2).shape}) ---> output ({enc3.shape})")
+        enc4 = self.e_4(self.p_3(enc3))
+        #print(f"Encoder block 4 : input ({self.p_3(enc3).shape}) ---> output ({enc4.shape})")
 
-        e_1 = self.e_conv1(x)
-        print("conv1",e_1.shape)
-        e_1_pool = self.pool(F.relu(e_1))
-        print("pool1",e_1_pool.shape)
+        bottle = self.b(self.p_4(enc4))
+        #print(f"BottleNeck : input ({self.p_4(enc4).shape}) ---> output ({bottle.shape})")
 
-        e_2 = self.e_conv1(e_1_pool)
-        print("conv2",e_2.shape)
-        e_2_pool = self.pool(F.relu(e_2))
-        print("pool2",e_2_pool.shape)
+        dec1 = self.d_upconv1(bottle)
+        dec1 = torch.cat((dec1, enc4), dim=1)
+        dec1 = self.d_1(dec1)
+        #print(f"Decoder block 1 : input ({bottle.shape}) ---> output ({dec1.shape})")
+        dec2 = self.d_upconv2(dec1)
+        dec2 = torch.cat((dec2, enc3), dim=1)
+        dec2 = self.d_2(dec2)
+        #print(f"Decoder block 2 : input ({dec1.shape}) ---> output ({dec2.shape})")
+        dec3 = self.d_upconv3(dec2)
+        dec3 = torch.cat((dec3, enc2), dim=1)
+        dec3 = self.d_3(dec3)
+        #print(f"Decoder block 3 : input ({dec2.shape}) ---> output ({dec3.shape})")
+        dec4 = self.d_upconv4(dec3)
+        dec4 = torch.cat((dec4, enc1), dim=1)
+        dec4 = self.d_4(dec4)
+        #print(f"Decoder block 4 : input ({dec3.shape}) ---> output ({dec4.shape})")
+        out = self.final(dec4)
+        #print(f"Final : input ({dec4.shape}) ---> output ({out.shape})")
 
-        e_3 = self.e_conv1(e_2_pool)
-        print("conv3",e_2.shape)
-        e_3_pool = self.pool(F.relu(e_3))
-        print("pool3",e_3_pool.shape)
 
-        print("\n\n")
-
-        b = F.relu(self.b_conv(e_3_pool))
-        print("bottleneck",b.shape)
-
-        print("\n\n")
-
-        d_1 = self.d_upconv1(b)
-        print("upconv1",d_1.shape)
-        d_1 = torch.cat([d_1, e_3], dim=1)
-        print("concat1", d_1.shape)
-        d_1 = F.relu(self.d_conv1(d_1))
-        print("conv1",d_1.shape)
-
-        d_2 = self.d_upconv1(d_1)
-        print("upconv2",d_2.shape)
-        d_2 = torch.cat([d_2, e_2], dim=1)
-        print("concat2", d_2.shape)
-        d_2 = F.relu(self.d_conv2(d_2))
-        print("conv2",d_2.shape)
-
-        d_3 = self.d_upconv1(d_2)
-        print("upconv3",d_3.shape)
-        d_3 = torch.cat([d_3, e_1], dim=1)
-        print("concat3", d_3.shape)
-        d_3 = F.relu(self.d_conv3(d_3))
-        print("conv3",d_3.shape)
-
-        return d_3.transpose(1,2)
+        # print(f"UNet : input ({x.shape}) ---> output ({out.shape}) \n")
+        return out

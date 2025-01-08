@@ -4,3 +4,15 @@ MPI-FAUST/
 __pycache__
 *.pt
 ProcessesDataset
+*.aux
+*.log
+*.fls
+*.out
+*.bbl
+*.blg
+*.toc
+*.fdb_latexmk
+*.synctex
+*.synctex.gz
+*.nav
+*.snm
