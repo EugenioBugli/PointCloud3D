@@ -17,9 +17,9 @@
 
 \begin{frame}{TODO}
 \begin{itemize}
-\item check UNet
+\item fix sampling
+\item fix decoder
 \item reconstruction
-\item bilinear interpolation
 \item metrics
 \item slides
 \end{itemize}
@@ -55,12 +55,13 @@ Insert here 1/2 images of different bodies with differente poses. Registration +
 \end{frame}
 
 \begin{frame}{Sampling}
-    The perfomances of the Architecture varies with respect to the Sampling technique used. The author of the paper have used a Uniform Sampling, while in my case I have tried different approaches, each with different pros and cons:
+    Even if I have used a different dataset, I have followed the same sampling and augmentation strategy for my input data:
     \begin{itemize}
-    \item Random Sampling
-    \item Importance Sampling
-    \item Uniform Sampling
+        \item First we need randomly sample 3000 points from the cloud's surface
+        \item Then we inject Gaussian noise with zero mean and 0.05 standard deviation
     \end{itemize}
+    These processed clouds are then used to learn the features and the geometry of the object through the Encoder.
+    The occupancy is then predicted over a set of 2048 points uniformly sampled over all the space, both inside and outside the shape.
 \end{frame}
 
 \begin{frame}{Examples of Sampled Clouds}

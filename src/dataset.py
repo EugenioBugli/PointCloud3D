@@ -11,26 +11,25 @@ class FAUST_Dataset(Dataset):
         This class is used to load a partition of the FAUST dataset. Before using this you must access the file via DatasetFolder.
     """
 
-    def __init__(self, scan_files, reg_files=None, sampling_type="RANDOM", sampling_size=1024, partition="TRAIN", transform=None):
+    def __init__(self, scan_files, reg_files=None, sampling_size=2048, partition="TRAIN", transform=None):
         super(FAUST_Dataset, self).__init__()
         self.scan_files = scan_files # list of files .ply
         self.partition = partition
         self.reg_files = reg_files if partition in ["TRAIN", "VAL"] else None # list of files .ply
-        self.sampling_type = sampling_type
         self.sampling_size = sampling_size
         self.transform = transform
 
-        self.scans, self.regs = self.extractClouds()
+        self.scans, self.regs, self.query = self.extractClouds()
 
     def __getitem__(self, index):
         if self.partition in ["TRAIN", "VAL"]:
             if self.transform:
-                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.regs[index]).to(torch.float32).squeeze(0)
-            return self.scans[index], self.regs[index]
+                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.regs[index]).to(torch.float32).squeeze(0), self.transform(self.query[index]).to(torch.float32).squeeze(0), self.scan_files[index], self.reg_files[index]
+            return self.scans[index], self.regs[index], self.query[index], self.scan_files[index], self.reg_files[index]
         else: # test case
             if self.transform:
-                return self.transform(self.scans[index]).to(torch.float32).squeeze(0)
-            return self.scans[index]
+                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.query[index]).to(torch.float32).squeeze(0), self.scan_files[index]
+            return self.scans[index], self.query[index], self.scan_files[index]
 
     def __len__(self):
         return len(self.scan_files)
@@ -40,16 +39,20 @@ class FAUST_Dataset(Dataset):
 
         scans = []
         regs = []
+        query = []
 
         for i in range(len(self.scan_files)):
             s = o3d.io.read_point_cloud(self.scan_files[i])
-            scans.append(self.SamplingFunction(s))
+            scans.append(self.SamplingFunction(s, operation="RANDOM"))
 
             if self.partition in ["TRAIN", "VAL"]:
                 r = np.asarray(o3d.io.read_point_cloud(self.reg_files[i]).points)
                 regs.append(r)
 
-        return scans, regs if regs else None
+            q = o3d.io.read_point_cloud(self.scan_files[i])
+            query.append(self.SamplingFunction(q, operation="QUERY"))
+
+        return scans, regs if regs else None, query
 
     def plotCloud(self, cloud):
         """
@@ -83,51 +86,40 @@ class FAUST_Dataset(Dataset):
         )
         fig.show()
 
-    def SamplingFunction(self, cloud):
+    def SamplingFunction(self, cloud, operation=None):
         """
             This function is used to sample a small Subset of points from the Point Clouds inside our Dataset.
 
             @INPUT :
                 > cloud : Point Cloud extracted from .ply file
+                > operation : specifies which type of operation must be performed (sampling from the surface or over all the space)
 
             @OUTPUT :
                 > sampled_cloud : Sampled Point Cloud
         """
-
-        if self.sampling_type == 'RANDOM':
+        if operation == "RANDOM": # sample from the surface of the cloud (sampling_size=3000)
             points = np.asarray(cloud.points)
-            indices = np.random.choice(len(points), size=self.sampling_size)
+            indices = np.random.choice(len(points), size=3000)
             sampled_cloud = points[indices]
-        if self.sampling_type == 'IMPORTANCE':
-            numOfNeighbors = 20
-            # estimate normal vectors to the surface at each point of the cloud
-            cloud.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn=numOfNeighbors))
-            tree = o3d.geometry.KDTreeFlann(cloud) # faster
-            # loop over the points and compute curvature
-            curvature = np.zeros(len(cloud.points))
-            for i in range(len(cloud.points)):
-                # find indices of the neighbors
-                [_ , idx, _] = tree.search_knn_vector_3d(cloud.points[i], numOfNeighbors)
-                neighbors = np.asarray(cloud.points)[idx, :]
-                # compute covariance matrix for each point
-                covarianceMat = np.cov(neighbors.T)
-                # extract eigenvalues
-                eigen, _ = np.linalg.eigh(covarianceMat)
-                # compute curvature
-                curvature[i] = min(eigen) / sum(eigen)
-            # extract the best SamplingPoints points
-            maxCurvaturePoints = curvature.argsort()[-self.SamplingSize:]
-            sampled_cloud = np.asarray(cloud.points)[maxCurvaturePoints]
+
+        if operation == "QUERY": # uniform sample from all the space (points will be both outside and inside the cloud) (sampling_size=2048)
+            axis_bounding_box = cloud.get_axis_aligned_bounding_box()
+            min_bound = axis_bounding_box.min_bound
+            max_bound = axis_bounding_box.max_bound
+
+            padding = 0.1*(max_bound - min_bound)
+
+            sampled_cloud = np.random.uniform(np.asarray(min_bound-padding), np.asarray(max_bound-padding), size=(self.sampling_size, 3))
 
         return sampled_cloud
 
 # Save your preprocessed Dataset:
 def SaveDataset(dataset, path):
-    torch.save(dataset, "/content/drive/MyDrive/CV/PreProcessed/"+path)
+    torch.save(dataset, "/content/drive/MyDrive/CV/SavedData/"+path)
 
 # Load your preprocessed Dataset:
 def LoadDataset(path):
-    return torch.load("/content/drive/MyDrive/CV/PreProcessed/"+path, weights_only=False)
+    return torch.load("/content/drive/MyDrive/CV/SavedData/"+path, weights_only=False)
 
 def openDataFiles(training_path, test_path, val_size):
     """

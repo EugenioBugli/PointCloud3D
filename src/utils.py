@@ -2,6 +2,7 @@ import numpy as np
 import open3d as o3d
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+import trimesh
  
 def Plot2D(cloud2d):
     figure2D = plt.figure(figsize=(7,7))
@@ -64,3 +65,36 @@ def Plot2DWithBuckets(input_plane, resolution, max_pool_points):
     fig.set_figheight(7)
     fig.set_figwidth(21)
     plt.show()
+    
+# starting from the sampled point cloud, I need to extract the occupancy prediction label
+def Cloud2Voxel(cloud, size=0.05):
+    # assumed to be a np.array
+    point_cloud = toPointCloud(cloud)
+    voxel = o3d.geometry.VoxelGrid.create_from_point_cloud(point_cloud, voxel_size=size)
+    return voxel
+
+def toPointCloud(cloud):
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(cloud)
+    point_cloud.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.05, max_nn=30))
+    point_cloud.orient_normals_consistent_tangent_plane(k=30)
+
+    return point_cloud
+
+def o3d2Trimesh(mesh):
+    vertices = np.asarray(mesh.vertices)
+    faces = np.asarray(mesh.triangles)
+    return trimesh.Trimesh(vertices, faces, process=False)
+
+def PlotOccupancyMesh(mesh_name, cloud, labels):
+    mesh = o3d.io.read_triangle_mesh(mesh_name)
+    mesh.paint_uniform_color([0.1,0.1,0.1])
+    pc = toPointCloud(cloud)
+    colors = []
+    for l in labels:
+        if l == 0:
+            colors.append([1, 0, 0])
+        else:
+            colors.append([0, 1, 0])
+    pc.colors = o3d.utility.Vector3dVector(colors)
+    o3d.visualization.draw_plotly([mesh, pc])
