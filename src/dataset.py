@@ -20,16 +20,17 @@ class FAUST_Dataset(Dataset):
         self.transform = transform
 
         self.scans, self.regs, self.query = self.extractClouds()
+        self.labels = self.extractLabels()
 
     def __getitem__(self, index):
         if self.partition in ["TRAIN", "VAL"]:
             if self.transform:
-                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.regs[index]).to(torch.float32).squeeze(0), self.transform(self.query[index]).to(torch.float32).squeeze(0), self.scan_files[index], self.reg_files[index]
-            return self.scans[index], self.regs[index], self.query[index], self.scan_files[index], self.reg_files[index]
+                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.regs[index]).to(torch.float32).squeeze(0), self.transform(self.query[index]).to(torch.float32).squeeze(0), self.scan_files[index], self.reg_files[index], self.transform(self.labels[index]).to(torch.float32).squeeze(0)
+            return self.scans[index], self.regs[index], self.query[index], self.scan_files[index], self.reg_files[index], self.labels[index]
         else: # test case
             if self.transform:
-                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.query[index]).to(torch.float32).squeeze(0), self.scan_files[index]
-            return self.scans[index], self.query[index], self.scan_files[index]
+                return self.transform(self.scans[index]).to(torch.float32).squeeze(0), self.transform(self.query[index]).to(torch.float32).squeeze(0), self.scan_files[index], self.transform(self.labels[index]).to(torch.float32).squeeze(0)
+            return self.scans[index], self.query[index], self.scan_files[index], self.labels[index]
 
     def __len__(self):
         return len(self.scan_files)
@@ -53,6 +54,29 @@ class FAUST_Dataset(Dataset):
             query.append(self.SamplingFunction(q, operation="QUERY"))
 
         return scans, regs if regs else None, query
+
+    def extractLabels(self, threshold=0.05):
+
+        # registration which will gives us the watertight mesh
+        # sampled_cloud is the point cloud obtained by uniform sampling in the space of the cloud
+        label_container = []
+
+        for cloud in range(len(self.scan_files)):
+            if self.partition in ["TRAIN", "VAL"]:
+                reg_name = self.reg_files[cloud]
+            else:
+                reg_name = self.scan_files[cloud]
+            mesh = trimesh.load_mesh(reg_name)
+            labels = np.zeros(self.scans[cloud].shape[0], dtype=np.int32)
+            distances = mesh.nearest.signed_distance(self.scans[cloud])
+            # outside = negative distance
+            # inside = positive distance
+            labels[distances >= 0] = 1
+            labels[distances > -threshold] = 1
+            label_container.append(labels.reshape(-1,1))
+
+        return np.asarray(label_container)
+
 
     def plotCloud(self, cloud):
         """
