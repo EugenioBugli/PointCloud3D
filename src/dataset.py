@@ -67,7 +67,7 @@ class FAUST_Dataset(Dataset):
             else:
                 reg_name = self.scan_files[cloud]
             mesh = trimesh.load_mesh(reg_name)
-            labels = np.zeros(self.scans[cloud].shape[0], dtype=np.int32)
+            labels = np.zeros(self.query[cloud].shape[0], dtype=np.int32)
             distances = mesh.nearest.signed_distance(self.scans[cloud])
             # outside = negative distance
             # inside = positive distance
