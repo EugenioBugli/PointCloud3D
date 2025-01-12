@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import open3d as o3d
 import plotly.graph_objects as go
+import trimesh
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import DatasetFolder
 from sklearn.model_selection import train_test_split
