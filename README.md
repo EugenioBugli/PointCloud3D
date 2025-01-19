@@ -1,7 +1,7 @@
 # Point Cloud Occupancy with Dynamic Planes
 
 This Repository contains code for reconstructing 3D point clouds using the Occupancy Predictions of a small and sparse subsets of points.
-This work is based on *Lionar, Stefan, et al. "**Dynamic Plane Convolutional Occupancy Networks**" Proceedings of the IEEE/CVF Winter Conference of Applications of Computer Vision, 2021* with **FAUST Dataset**.
+This work is based on *Lionar, Stefan, et al. "**Dynamic Plane Convolutional Occupancy Networks**" Proceedings of the IEEE/CVF Winter Conference of Applications of Computer Vision, 2021* with <code style="color : GreenYellow">FAUST Dataset</code>.
 
 <table>
   <tr>
@@ -17,6 +17,7 @@ This work is based on *Lionar, Stefan, et al. "**Dynamic Plane Convolutional Occ
 ## Table of Contents
 - [Repository-Structure](#repository-structure)
 - [Installation](#installation)
+- [Dataset](#dataset)
 - [Architecture](#architecture)
 
 ## Repository Structure
@@ -26,17 +27,23 @@ PointCloud3D/
 ├── requirements.txt
 ├── PointCloud3D.ipynb
 ├── .gitignore
-├── media/
-├── src/
+├── Media/
+│    └── images
 │
-│
+├── Src/
+│    ├── dataset.py
+│    ├── encoder.py
+│    ├── plane_predictor.py
+│    ├── unet.py
+│    └── utils.py
+│    
 ├── Papers/
-│    ├── paper.pdf
+│    ├── dynamic_plane_conv.pdf
+│    └── occupancy_net_mise.pdf
 │
-├── Slides/
+└── Slides/
      ├── main.pdf
-     ├── main.tex
-
+     └── main.tex
 ```
 
 ## Installation
@@ -49,6 +56,9 @@ PointCloud3D/
     pip install -r <Folder>/3DPointCloud/requirements.txt
 3. You can run the Code directly from the [Notebook](PointCloud3D.ipynb)
 
+## Dataset
+<code style="color : GreenYellow">FAUST Dataset</code> 
+
 ## Architecture
 ![Alt Text](./media/architecture_pipeline.png)
 The Architecture used has an Encoder-Decoder structure and takes a Noisy Cloud as input for the Encoder and a Sampled Cloud for the Decoder.
@@ -57,5 +67,5 @@ The Architecture used has an Encoder-Decoder structure and takes a Noisy Cloud a
 
 - **Sampled Cloud**: it's composed by 2048 points sampled over the bounding box containing the starting mesh.
 
-The obtained occupancy predictions are then used to reconstruct the mesh by using the Multiresolution IsoSurface Extraction (MISE).
+During Training we use Binary Cross Entropy (<code style="color : GreenYellow">BCE</code>) between the occupancy prediction and the ground truth occupancy, while during Inference we Multiresolution IsoSurface Extraction (<code style="color : GreenYellow">MISE</code>) to reconstruct the meshes.
 ![Alt Text](./media/mise.png)
