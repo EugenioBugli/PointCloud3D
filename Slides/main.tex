@@ -15,75 +15,61 @@
 
 \section{Introduction}
 
-\begin{frame}{TODO}
-\begin{itemize}
-\item fix sampling
-\item fix decoder
-\item reconstruction
-\item metrics
-\item slides
-\end{itemize}
-\end{frame}
-
 \begin{frame}{What is the Addressed Problem}
 \begin{itemize}
-	\item In this work we are interested in performing the reconstruction of point clouds. 
-	\item The input noisy point clouds are encoded into per-point features that are projected onto multiple 2D dynamic planes.
-	\item Then we predict the occupancy values of each point in order to find the surface of the shapes.
-	\item The original paper applied this study to the ShapeNet Dataset.
+	\item We are interested in learning the occupancy values of points inside a bounding box
+	\item With encode a noisy point cloud into features and project them onto dynamic planes 
+	\item During Inference we reconstruct meshes with Multiresolution IsoSurface Extraction
 \end{itemize}
 \end{frame} 
-
-\begin{frame}{Point Clouds, Meshes and Ground Truths}
-Insert 3 images of the same sample
-\end{frame}
 
 \section{Dataset}
 
 \begin{frame}{FAUST Dataset}
     This Dataset is composed by high-resolution human scans of 10 different bodies in 30 different poses. 
     \begin{itemize}
-    \item The test set is composed by 200 scans, while the training has 100 scans.
     \item Each of the samples inside the training set has a corresponded ground truth alignment (registration)
-    \item The training set has been partitioned again in order to obtain train and validation sets
+    \item The test set is composed by 200 scans, while the training has 100 scans.
     \item About 80 \% fo the initial training set has been used for training, while the other 20 \% has been used for validation 
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Examples from the Dataset}
-Insert here 1/2 images of different bodies with differente poses. Registration + Clouds
-\end{frame}
 
-\begin{frame}{Sampling}
-    Even if I have used a different dataset, I have followed the same sampling and augmentation strategy for my input data:
+% \begin{frame}{Examples from the Dataset}
+%   \begin{columns}[t]
+%     \column{0.48\textwidth}
+%       \centering
+%       \includegraphics[width=\textwidth]{../media/test_scan_137.gif} % first image
+%       % \caption{Image 1} % optional: add caption using a note or overlay
+%     \column{0.48\textwidth}
+%       \centering
+%       \includegraphics[width=\textwidth]{../media/test_scan_191.gif} % second image
+%       % \caption{Image 2}
+%   \end{columns}
+% \end{frame}
+
+\begin{frame}{Data Processing}
+    I have followed the same strategy of the original paper:
     \begin{itemize}
-        \item First we need randomly sample 3000 points from the cloud's surface
+        \item We need to randomly sample 3000 points from the cloud's surface
         \item Then we inject Gaussian noise with zero mean and 0.05 standard deviation
     \end{itemize}
-    These processed clouds are then used to learn the features and the geometry of the object through the Encoder.
-    The occupancy is then predicted over a set of 2048 points uniformly sampled over all the space, both inside and outside the shape.
-\end{frame}
-
-\begin{frame}{Examples of Sampled Clouds}
-Insert here images of the sampled point cloud in the 3 Cases + Real cloud
+    These noisy clouds are then used to learn the features and the geometry of the object through the Encoder.
+    The occupancy is then predicted over a set of 2048 points uniformly sampled over all the bounding box containing the original cloud/mesh.
 \end{frame}
 
 \section{Architecture}
 
 \begin{frame}{Architecture design}
-The Architecture is characterized by an Encoder-Decoder structure:
-\begin{itemize}
-\item Encode the input clouds into 2D Feature Planes
-\item Decode these features into occupancy probabilities
-\end{itemize}
-\includegraphics[width=\textwidth]{../media/architecture.png}
+\includegraphics[width=\textwidth]{../media/architecture_pipeline_slides.png}
 \end{frame}
 
 \begin{frame}{Encoder}
-The Encoder is composed by :
+The Encoder takes in input the Noisy Cloud and is composed by the following steps:
 \begin{itemize}
 \item ResNet PointNet
-\item Plane Predictor 
+\item Simple PointNet + Plane Predictor 
+\item Feature summation + projection 
 \item UNet
 \end{itemize}
 \includegraphics[width=\textwidth]{../media/encoder.png}
@@ -99,8 +85,20 @@ The Dec is composed by:
 
 \section{Reconstruction}
 
-\begin{frame}{Reconstruction Phase}
-\end{frame}
+\begin{frame}{Multiresolution IsoSurface Extraction (MISE)}
+    \begin{columns}[T]
+      \column{0.5\textwidth}
+        \begin{itemize}
+            \item Create a grid over all the bounding box 
+            \item Evaluate the occupancy of each corner of the voxels
+            \item Define the Active voxels as the one composed with at least one occupied corner and one not 
+            \item Subdivide each Active voxels into 8 subvoxels ($2x2x2$ grid) and evaluate the new points occupancy
+            \item Repeat until the desired resolution is obtained
+        \end{itemize}
+      \column{0.5\textwidth}
+        \includegraphics[width=\linewidth]{../media/mise.png}
+    \end{columns}
+  \end{frame}
 
 \section{Results}
 
@@ -125,10 +123,6 @@ Insert here plots
 \begin{frame}{Metrics Performances}
 Insert here just a table with metrics, gpu usage
 various types of sampling
-\end{frame}
-
-\begin{frame}{ReconstructionPerformances}
-Insert here just some images about reconstructions
 \end{frame}
 
 \section{Improvements}
