@@ -60,7 +60,7 @@ PointCloud3D/
 <code style="color : GreenYellow">FAUST Dataset</code> 
 
 ## Architecture
-![Alt Text](./media/architecture_pipeline.png)
+![Alt Text](./media/pipeline_scuro.png)
 The Architecture used has an Encoder-Decoder structure and takes a Noisy Cloud as input for the Encoder and a Sampled Cloud for the Decoder.
 
 - **Noisy Cloud**: it's composed by 3000 points sampled over the surface of the starting mesh with the addition of Gaussian noise.

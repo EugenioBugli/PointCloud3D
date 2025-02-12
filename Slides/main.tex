@@ -17,9 +17,9 @@
 
 \begin{frame}{What is the Addressed Problem}
 \begin{itemize}
-	\item We are interested in learning the occupancy values of points inside a bounding box
-	\item With encode a noisy point cloud into features and project them onto dynamic planes 
-	\item During Inference we reconstruct meshes with Multiresolution IsoSurface Extraction
+	  \item We would like to learn the \textbf{Occupancy} values of points inside a bounding box
+	  \item We learn the features and the dynamic planes 
+	  \item During Inference we reconstruct meshes with Multiresolution IsoSurface Extraction
 \end{itemize}
 \end{frame} 
 
@@ -49,19 +49,25 @@
 % \end{frame}
 
 \begin{frame}{Data Processing}
-    I have followed the same strategy of the original paper:
+    Starting from the meshes given by the Dataset, some pre-processing is needed:
     \begin{itemize}
-        \item We need to randomly sample 3000 points from the cloud's surface
-        \item Then we inject Gaussian noise with zero mean and 0.05 standard deviation
+        \item We need to randomly sample \textbf{3000} points from the mesh surface and add a perturbation (Gaussian noise) to them 
+        \item We need to randomly sample \textbf{2048} points from the bounding box that contains the original mesh
     \end{itemize}
-    These noisy clouds are then used to learn the features and the geometry of the object through the Encoder.
-    The occupancy is then predicted over a set of 2048 points uniformly sampled over all the bounding box containing the original cloud/mesh.
+    These noisy clouds are then used to learn the features and the geometry of the object through the Encoder, while the other points are used in the decoding part of the network.
+\end{frame}
+
+\begin{frame}{Data Augmentation}
+
+\end{frame}
+\begin{frame}{Label Generation}
+
 \end{frame}
 
 \section{Architecture}
 
 \begin{frame}{Architecture design}
-\includegraphics[width=\textwidth]{../media/architecture_pipeline_slides.png}
+\includegraphics[width=\textwidth]{../media/pipeline_chiaro.png}
 \end{frame}
 
 \begin{frame}{Encoder}
