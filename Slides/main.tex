@@ -26,11 +26,11 @@
 \section{Dataset}
 
 \begin{frame}{FAUST Dataset}
-    This Dataset is composed by high-resolution human scans of 10 different bodies in 30 different poses. 
+    This Dataset is composed by high-resolution \textbf{human scans} of 10 different bodies in 30 different poses. 
     \begin{itemize}
-    \item Each of the samples inside the training set has a corresponded ground truth alignment (registration)
+    \item Each samples inside the training set is composed by the scan and the registration, while we have only the scan for the test set.
     \item The test set is composed by 200 scans, while the training has 100 scans.
-    \item About 80 \% fo the initial training set has been used for training, while the other 20 \% has been used for validation 
+    \item About 80 \% fo the initial training set has been used for training, while the other 20 \% has been used for validation.
     \end{itemize}
 \end{frame}
 
@@ -51,8 +51,8 @@
 \begin{frame}{Data Processing}
     Starting from the meshes given by the Dataset, some pre-processing is needed:
     \begin{itemize}
-        \item We need to randomly sample \textbf{3000} points from the mesh surface and add a perturbation (Gaussian noise) to them 
-        \item We need to randomly sample \textbf{2048} points from the bounding box that contains the original mesh
+        \item We need to randomly sample \textbf{3000} points from the mesh surface and add a perturbation (Gaussian noise) to them.
+        \item We need to randomly sample \textbf{2048} points from the bounding box that contains the original mesh.
     \end{itemize}
     These noisy clouds are then used to learn the features and the geometry of the object through the Encoder, while the other points are used in the decoding part of the network.
 \end{frame}
@@ -61,7 +61,7 @@
 
 \end{frame}
 \begin{frame}{Label Generation}
-
+  \includegraphics[width=\textwidth]{../media/label_occupancy.png}
 \end{frame}
 
 \section{Architecture}
@@ -71,22 +71,23 @@
 \end{frame}
 
 \begin{frame}{Encoder}
-The Encoder takes in input the Noisy Cloud and is composed by the following steps:
+The Encoding part takes in input the Noisy Cloud and it's composed by the following steps:
 \begin{itemize}
 \item ResNet PointNet
 \item Simple PointNet + Plane Predictor 
 \item Feature summation + projection 
 \item UNet
 \end{itemize}
-\includegraphics[width=\textwidth]{../media/encoder.png}
+\includegraphics[width=\textwidth]{../media/encoder_pipeline.png}
 \end{frame}
 
 \begin{frame}{Decoder}
-The Dec is composed by:
+The Decoding part is composed by:
 \begin{itemize}
 \item Feature Projection and Bilinear Interpolation
 \item Occupancy Network
 \end{itemize}
+\includegraphics[width=\textwidth]{../media/decoder_pipeline.png}
 \end{frame}
 
 \section{Reconstruction}
