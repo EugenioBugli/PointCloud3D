@@ -6,10 +6,10 @@ This work is based on *Lionar, Stefan, et al. "**Dynamic Plane Convolutional Occ
 <table>
   <tr>
     <td>
-      <img src="./media/test_scan_191.gif" alt="First GIF">
+      <img src="./Media/test_scan_191.gif" alt="First GIF">
     </td>
     <td>
-      <img src="./media/test_scan_137.gif" alt="Second GIF">
+      <img src="./Media/test_scan_137.gif" alt="Second GIF">
     </td>
   </tr>
 </table>
@@ -60,7 +60,7 @@ PointCloud3D/
 <code style="color : GreenYellow">FAUST Dataset</code> 
 
 ## Architecture
-![Alt Text](./media/pipeline_scuro.png)
+![Alt Text](./Media/pipeline_scuro.png)
 The Architecture used has an Encoder-Decoder structure and takes a Noisy Cloud as input for the Encoder and a Sampled Cloud for the Decoder.
 
 - **Noisy Cloud**: it's composed by 3000 points sampled over the surface of the starting mesh with the addition of Gaussian noise.
@@ -68,4 +68,4 @@ The Architecture used has an Encoder-Decoder structure and takes a Noisy Cloud a
 - **Sampled Cloud**: it's composed by 2048 points sampled over the bounding box containing the starting mesh.
 
 During Training we use Binary Cross Entropy (<code style="color : GreenYellow">BCE</code>) between the occupancy prediction and the ground truth occupancy, while during Inference we Multiresolution IsoSurface Extraction (<code style="color : GreenYellow">MISE</code>) to reconstruct the meshes.
-![Alt Text](./media/mise.png)
+![Alt Text](./Media/mise.png)
