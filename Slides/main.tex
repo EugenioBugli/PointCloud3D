@@ -59,8 +59,7 @@
 \end{frame}
 
 \begin{frame}{Data Augmentation}
-
-  Here is some introductory text explaining the data augmentation process. This text spans the full width of the frame.
+  Each input given to the decoder has been augmented with random \textbf{rotations}, \textbf{translations} and \textbf{scaling}.
   
   \vspace{1em}
 
@@ -84,10 +83,10 @@
     \column{0.45\textwidth}
       For each Sampled Cloud, labels have been generated with the following procedure:
       \begin{itemize}
-        \item Measure the distance between the original mesh and the sampled points
-        \item If the distance is positive then the point are inside the mesh
-        \item If the distance is $0$ the points are on the surface
-        \item If the distance is negative outside a small threshold I am considering them outside
+        \item Measure the \textbf{distance} between the original mesh and the sampled points
+        \item If the distance is \textbf{positive} then the point are inside the mesh
+        \item If the distance is zero the points are on the surface
+        \item If the distance is more \textbf{negative} than a small threshold I am considering them outside
       \end{itemize}
   
     \column{0.45\textwidth}
@@ -148,18 +147,12 @@ The Decoding part is composed by:
   \begin{columns}[T]
     \column{0.5\textwidth}
     \vspace{1em}
-    \begin{itemize}
-      \item \textbf{Definition:}  
-      \begin{itemize}
-          \item Bilinear interpolation is a resampling technique used to estimate new pixel values on a 2D grid.
-      \end{itemize}
+      This resampling technique has been used before the final shallow network (Occupancy Network) in the decoding part of the network.
 
-      \item \textbf{Concept:}
       \begin{itemize}
           \item It computes the output value as a weighted average of the four nearest pixel values.
-          \item The interpolation is performed first in one direction (e.g., horizontal) and then in the other (vertical).
+          \item The interpolation is performed first in one direction and then in the other one.
       \end{itemize}
-    \end{itemize}
 
     \column{0.45\textwidth}
       \vspace{-2.5em}
@@ -206,14 +199,13 @@ Add each formula
 Insert here plots
 \end{frame}
 
-\begin{frame}{Metrics Performances}
-Insert here just a table with metrics, gpu usage
-various types of sampling
-\end{frame}
-
 \section{Improvements}
 
 \begin{frame}{Possible Changes and Future Improvements}
+  \begin{itemize}
+    \item Add new type of Augmentation
+    \item Try different sampling techniques
+  \end{itemize}
 \end{frame}
 
 \backmatter
