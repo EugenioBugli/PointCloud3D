@@ -74,7 +74,7 @@ The sampled cloud is obtained by sampling points inside the bounding box that co
 ![Alt Text](./Media/example/sampled_cloud.png)
 
 ## Architecture
-![Alt Text](./Media/pipeline_scuro.png)
+![Alt Text](./Media/structure/pipeline_scuro.png)
 The Architecture used has an Encoder-Decoder structure and takes a Noisy Cloud as input for the Encoder and a Sampled Cloud for the Decoder.
 
 - <font color="mediumpurple">**Noisy Cloud**</font>: it's composed by 3000 points sampled over the surface of the starting mesh with the addition of Gaussian noise.
@@ -87,7 +87,7 @@ During Training we use Binary Cross Entropy (<font color="gold">BCE</font>) betw
 
 This procedure, which is used to reconstruct a mesh starting from points sampled inside the orginal bounding box, follows these steps :
 
-![Alt Text](./Media/mise.png)
+![Alt Text](./Media/structure/mise.png)
 
 1. The volumetric space is discretized at an <font color="cornflowerblue">Initial Resolution</font> and for all the points (corners) belonging to this grid, the occupancy is checked with our Network.
 
@@ -99,5 +99,15 @@ This procedure, which is used to reconstruct a mesh starting from points sampled
 
 5. Repeat this until the <font color="cornflowerblue">Final Resolution</font> is reached.
 
-    
-6. At this final resolution, we apply the <font color="gold">Marching Cubes algorithm</font> to extract an approximate isosurface : ${p ∈ R^3 | f_θ(p,x) = τ}$.
+<table>
+  <tr>
+    <td>
+      At this final resolution, we apply the <font color="gold">Marching Cubes algorithm</font> to extract an approximate isosurface : 
+    </td>
+    <td>
+      <img src="./Media/marching_cubes.gif" alt="Marching cubes">
+    </td>
+  </tr>
+</table>
+
+${ p \in \mathbb{R}^3 \ | \ f_{θ}(p,x) = τ }$.

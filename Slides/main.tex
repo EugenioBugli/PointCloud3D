@@ -1,6 +1,7 @@
 \documentclass{beamer}
 % \usepackage{beamerthemesplit} // Activate for custom appearance
 \usepackage{beamerthemesintef}
+\usepackage{caption}
 
 \titlebackground*{assets/background}
 \title{Point Cloud Occupancy with Dynamic Planes}
@@ -59,26 +60,59 @@
 
 \begin{frame}{Data Augmentation}
 
-\end{frame}
+  Here is some introductory text explaining the data augmentation process. This text spans the full width of the frame.
+  
+  \vspace{1em}
+
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \centering
+      \includegraphics[width=0.9\linewidth, height=0.6\linewidth, keepaspectratio=false]{../Media/example/registration.png}
+      \captionof{figure}{Registration cloud}
+
+    \column{0.4\textwidth}
+      \centering
+      \hspace{1em}
+      \includegraphics[width=0.84\linewidth]{../Media/example/augmented_noisy_cloud.png}
+      \captionof{figure}{Augmented cloud}
+  \end{columns}
+  
+  \end{frame}
+
 \begin{frame}{Label Generation}
-  \includegraphics[width=\textwidth]{../media/label_occupancy.png}
+  \begin{columns}[T]
+    \column{0.45\textwidth}
+      For each Sampled Cloud, labels have been generated with the following procedure:
+      \begin{itemize}
+        \item Measure the distance between the original mesh and the sampled points
+        \item If the distance is positive then the point are inside the mesh
+        \item If the distance is $0$ the points are on the surface
+        \item If the distance is negative outside a small threshold I am considering them outside
+      \end{itemize}
+  
+    \column{0.45\textwidth}
+      \vspace{-2em}
+      \centering
+      \includegraphics[width=0.9\linewidth]{../Media/example/sampled_cloud.png}
+      \captionof{figure}{Example of the Sampled cloud, where with green we represent occupied points and with red the unoccupied ones}
+  \end{columns}
 \end{frame}
 
 \section{Architecture}
 
 \begin{frame}{Architecture design}
-\includegraphics[width=\textwidth]{../media/pipeline_chiaro.png}
+\includegraphics[width=\textwidth]{../media/structure/pipeline_chiaro.png}
 \end{frame}
 
 \begin{frame}{Encoder}
 The Encoding part takes in input the Noisy Cloud and it's composed by the following steps:
-\begin{itemize}
-\item ResNet PointNet
-\item Simple PointNet + Plane Predictor 
-\item Feature summation + projection 
-\item UNet
-\end{itemize}
-\includegraphics[width=\textwidth]{../media/encoder_pipeline.png}
+  \begin{itemize}
+    \item ResNet PointNet
+    \item Simple PointNet + Plane Predictor 
+    \item Feature summation + projection 
+    \item UNet
+  \end{itemize}
+\includegraphics[width=\textwidth]{../media/structure/encoder_pipeline.png}
 \end{frame}
 
 \begin{frame}{Decoder}
@@ -87,7 +121,52 @@ The Decoding part is composed by:
 \item Feature Projection and Bilinear Interpolation
 \item Occupancy Network
 \end{itemize}
-\includegraphics[width=\textwidth]{../media/decoder_pipeline.png}
+\includegraphics[width=\textwidth]{../media/structure/decoder_pipeline.png}
+\end{frame}
+
+\begin{frame}{Projection Operation}
+  Both the Encoder and the Decoder have a projection operation involving the features and the \textbf{Dynamic Planes}.
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+      \vspace{1.5em}
+      \begin{itemize}
+        \item Change of Basis
+        \item Orthographic Projection
+        \item Normalization
+      \end{itemize}
+    \column{0.45\textwidth}  
+      \includegraphics[width=\textwidth]{../media/projection.png}
+  \end{columns}
+  \vspace{1em}
+  \begin{equation}
+    \mathbf{R} = \mathbb{I} + [v]_{\times} + [v]_{\times}^2 \frac{1 - k \cdot \hat{\textbf{n}}}{|| v ||^2}
+  \end{equation}
+  Where $v = k \times \hat{\textbf{n}} $ and $[v]_{\times}$ it's the skew symmetric matrix of the vector $v \in \mathbb{R}^3$.
+\end{frame}
+
+\begin{frame}{Bilinear Interpolation}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \vspace{1em}
+    \begin{itemize}
+      \item \textbf{Definition:}  
+      \begin{itemize}
+          \item Bilinear interpolation is a resampling technique used to estimate new pixel values on a 2D grid.
+      \end{itemize}
+
+      \item \textbf{Concept:}
+      \begin{itemize}
+          \item It computes the output value as a weighted average of the four nearest pixel values.
+          \item The interpolation is performed first in one direction (e.g., horizontal) and then in the other (vertical).
+      \end{itemize}
+    \end{itemize}
+
+    \column{0.45\textwidth}
+      \vspace{-2.5em}
+      \centering
+      \includegraphics[width=0.65\linewidth]{../Media/bilinear.png}
+      \captionof{figure}{Bilinear Interpolation Visualization (credits: Wikipedia)}
+  \end{columns}
 \end{frame}
 
 \section{Reconstruction}
@@ -103,7 +182,7 @@ The Decoding part is composed by:
             \item Repeat until the desired resolution is obtained
         \end{itemize}
       \column{0.5\textwidth}
-        \includegraphics[width=\linewidth]{../media/mise.png}
+        \includegraphics[width=\linewidth]{../Media/structure/mise.png}
     \end{columns}
   \end{frame}
 
