@@ -34,8 +34,6 @@ PointCloud3D/
 │
 ├── Src/
 │    ├── dataset.py
-│    ├── encoder.py
-│    ├── plane_predictor.py
 │    ├── unet.py
 │    └── utils.py
 │    

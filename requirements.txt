@@ -6,3 +6,5 @@ matplotlib
 open3d
 plotly
 jupyter
+trimesh
+torch_scatter
